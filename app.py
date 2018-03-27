@@ -2,10 +2,16 @@ from flask import Flask, request
 import json
 import requests
 import pandas as pd
-
+#north edit you can delete
+data = pd.read_excel("testexcel.xlsx")
+vendor = []
+vendor.append(data['Unnamed: 0'][2])
+vendor.append(data['Unnamed: 0'][6])
+vendor.append(data['Unnamed: 0'][10])
+global msg_in_json
 # ตรง YOURSECRETKEY ต้องนำมาใส่เองครับจะกล่าวถึงในขั้นตอนต่อๆ ไป
 global LINE_API_KEY
-LINE_API_KEY = 'Bearer msTB/XETo5qTmQ82TvM4FrC1WLj2kuh/z5GWCRcYSfdAeFrNMLiWT94vQ6vbpzFpvM83CjInzpkM2ROCShELsy11nWIGUYUdXpo5XB9nR0fL0whgf5WOQFIUKtjKtJIFNGT//7uAhRCKdCrXZAlJuAdB04t89/1O/w1cDnyilFU='
+LINE_API_KEY = 'Bearer fjuRD12An1PrIPL4yJTEGHJAgikInxQvI/7yJPiPImwgIQreW4AcTD4OkC7xyu7gvM83CjInzpkM2ROCShELsy11nWIGUYUdXpo5XB9nR0d2f/JukFYsyxt32Ns9Z00E/v4g8sFn7KB/vmGESemJYwdB04t89/1O/w1cDnyilFU='
 
 app = Flask(__name__)
  
@@ -13,7 +19,6 @@ app = Flask(__name__)
 def index():
     return 'This is chatbot server.'
 @app.route('/bot', methods=['POST'])
-
 def bot():
     # ข้อความที่ต้องการส่งกลับ
     replyStack = list()
@@ -25,13 +30,15 @@ def bot():
     # Token สำหรับตอบกลับ (จำเป็นต้องใช้ในการตอบกลับ)
     replyToken = msg_in_json["events"][0]['replyToken']
 
-    # ตอบข้อความ "นี่คือรูปแบบข้อความที่รับส่ง" กลับไป
-    replyStack.append('นี่คือรูปแบบข้อความที่รับส่ง')
     
-    # ทดลอง Echo ข้อความกลับไปในรูปแบบที่ส่งไปมา (แบบ json)
+    # ทดลอง Echo ข้อความกลับไปในรูปแบบที่ส่งไป-มา (แบบ json)
     replyStack.append(msg_in_string)
-    reply(replyToken, replyStack[:5])
-    print('11111111')
+    #test vendor
+    if msg_in_json["events"][0]["message"]["text"].strip() == "Vendor" :
+        reply(replyToken, vendor)
+    else :
+        reply(replyToken, [msg_in_json["events"][0]["message"]["text"]])
+    
     return 'OK',200
  
 def reply(replyToken, textList):
@@ -45,12 +52,11 @@ def reply(replyToken, textList):
     for text in textList:
         msgs.append({
             "type":"text",
-            "text":"front"+text+"eieiei"
+            "text":text
         })
     data = json.dumps({
         "replyToken":replyToken,
         "messages":msgs
-##        "eiei":"whysoserious"
     })
     requests.post(LINE_API, headers=headers, data=data)
     return
