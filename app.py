@@ -2,16 +2,67 @@ from flask import Flask, request
 import json
 import requests
 import pandas as pd
-#north edit you can delete
+import numpy as np
+# ตรง YOURSECRETKEY ต้องนำมาใส่เองครับจะกล่าวถึงในขั้นตอนต่อๆ ไป
+# test read file
 data = pd.read_excel("testexcel.xlsx")
+#vendor
 vendor = []
 vendor.append(data['Unnamed: 0'][2])
 vendor.append(data['Unnamed: 0'][6])
 vendor.append(data['Unnamed: 0'][10])
-global msg_in_json
-# ตรง YOURSECRETKEY ต้องนำมาใส่เองครับจะกล่าวถึงในขั้นตอนต่อๆ ไป
+#configuration
+config_hua = []
+for i in range(2,6) :
+    config_hua.append(data['Unnamed: 1'][i])
+config_nok = []
+for i in range(6,10) :
+    config_nok.append(data['Unnamed: 1'][i])
+config_eric = []
+for i in range(10,14) :
+    config_eric.append(data['Unnamed: 1'][i])
+#Huawei BB and RRU
+hua_BB = dict()
+hua_RRU = dict()
+for i in range(4) :
+    hua_BB[config_hua[i]] = []
+    hua_RRU[config_hua[i]] = []
+    for j in range(2,6) :
+        if j == 2 :
+            temp = "FDD"
+        else :
+            temp = 'Unnamed: ' + str(j)
+        hua_BB[config_hua[i]].append(data[temp][i+2])
+        hua_RRU[config_hua[i]].append(data[temp][i+2])
+#Nokia BB and RRU
+nok_BB = dict()
+nok_RRU = dict()
+for i in range(4) :
+    nok_BB[config_nok[i]] = []
+    nok_RRU[config_nok[i]] = []
+    for j in range(2,6) :
+        if j == 2 :
+            temp = "FDD"
+        else :
+            temp = 'Unnamed: ' + str(j)
+        nok_BB[config_nok[i]].append(data[temp][i+6])
+        nok_RRU[config_nok[i]].append(data[temp][i+6])
+# Ericsson BB and RRU
+eric_BB = dict()
+eric_RRU = dict()
+for i in range(4) :
+    eric_BB[config_eric[i]] = []
+    eric_RRU[config_eric[i]] = []
+    for j in range(2,6) :
+        if j == 2 :
+            temp = "FDD"
+        else :
+            temp = 'Unnamed: ' + str(j)
+        eric_BB[config_eric[i]].append(data[temp][i+10])
+        eric_RRU[config_eric[i]].append(data[temp][i+10])
+# end test
 global LINE_API_KEY
-LINE_API_KEY = 'Bearer fjuRD12An1PrIPL4yJTEGHJAgikInxQvI/7yJPiPImwgIQreW4AcTD4OkC7xyu7gvM83CjInzpkM2ROCShELsy11nWIGUYUdXpo5XB9nR0d2f/JukFYsyxt32Ns9Z00E/v4g8sFn7KB/vmGESemJYwdB04t89/1O/w1cDnyilFU='
+LINE_API_KEY = "Bearer U/HsQTcUnjR0XfeeaaLavqDNPMtS9S8XVRtZnxI5kGbU/KLkl6ACPgTDVRhUs9st9HwBPatKDSzCO0QXkRcImHZLEBBlh8px09Y5+JSLlEMQG/coIPOOdIVPoN8Og/vUGotY54LSzD+yRSKOQ/AQwQdB04t89/1O/w1cDnyilFU="
 
 app = Flask(__name__)
  
@@ -19,6 +70,7 @@ app = Flask(__name__)
 def index():
     return 'This is chatbot server.'
 @app.route('/bot', methods=['POST'])
+
 def bot():
     # ข้อความที่ต้องการส่งกลับ
     replyStack = list()
@@ -30,14 +82,70 @@ def bot():
     # Token สำหรับตอบกลับ (จำเป็นต้องใช้ในการตอบกลับ)
     replyToken = msg_in_json["events"][0]['replyToken']
 
-    
     # ทดลอง Echo ข้อความกลับไปในรูปแบบที่ส่งไป-มา (แบบ json)
     replyStack.append(msg_in_string)
-    #test vendor
-    if msg_in_json["events"][0]["message"]["text"].strip() == "Vendor" :
+    # answer
+    mobile = ["Huawei","Nokia","Ericsson"]
+    before = ""
+    con = ""
+    if msg_in_json["events"][0]["message"]["text"] == "Vendor" :
         reply(replyToken, vendor)
+    elif msg_in_json["events"][0]["message"]["text"] in mobile :
+        reply(replyToken, ["Ok, I know what your mobile is."," If you want to about configuration.","Please, type Configuration."])
+        before = msg_in_json["events"][0]["message"]["text"]
+    elif msg_in_json["events"][0]["message"]["text"] == "Configuration" :
+        if before == "Huawei" :
+            config_hua.append("What is your configuration?")
+            reply(replyToken, config_hua)
+        elif before == "Nokia" :
+            config_nok.append("What is your configuration?")
+            reply(replyToken, config_nok)
+        else :
+            "What you want to know next? BB or RRU?"
+            config_eric.append("What is your configuration?")
+            reply(replyToken, config_eric)
+    elif msg_in_json["events"][0]["message"]["text"] in config_hua :
+        con = msg_in_json["events"][0]["message"]["text"]
+        before = [hua_BB,hua_RRU]
+        reply(replyToken, ["Is it BB or RRU"])
+    elif msg_in_json["events"][0]["message"]["text"] in config_nok :
+        con = msg_in_json["events"][0]["message"]["text"]
+        before = [hua_BB,hua_RRU]
+        reply(replyToken, ["Is it BB or RRU"])
+    elif msg_in_json["events"][0]["message"]["text"] in config_eric :
+        con = msg_in_json["events"][0]["message"]["text"]
+        before = [hua_BB,hua_RRU]
+        reply(replyToken, ["Is it BB or RRU"])
+    elif msg_in_json["events"][0]["message"]["text"] in ["BB","RRU"] :
+        if msg_in_json["events"][0]["message"]["text"] == "BB" :
+            before = before[0]
+            reply(replyToken, ["What is your sector?"])
+        else :
+            before = before[1]
+            reply(replyToken, ["What is your sector?"])
+    elif len(msg_in_json["events"][0]["message"]["text"].strip().split()) == 2 :
+        temp = int(msg_in_json["events"][0]["message"]["text"].strip().split()[0])
+        if temp == 3 :
+            before = ""
+            con = ""
+            reply(replyToken, [before[con][0]])
+        elif temp == 4 :
+            before = ""
+            con = ""
+            reply(replyToken, [before[con][1]])
+        elif temp == 6 :
+            before = ""
+            con = ""
+            reply(replyToken, [before[con][2]])
+        else :
+            before = ""
+            con = ""
+            reply(replyToken, [before[con][3]])
+
     else :
-        reply(replyToken, [msg_in_json["events"][0]["message"]["text"]])
+        before = ""
+        con = ""
+        reply(replyToken, ["Please, input Vendor first."])
     
     return 'OK',200
  
