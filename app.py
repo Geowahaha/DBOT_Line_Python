@@ -3,6 +3,9 @@ import json
 import requests
 import pandas as pd
 import numpy as np
+
+before = ""
+con = ""
 # ตรง YOURSECRETKEY ต้องนำมาใส่เองครับจะกล่าวถึงในขั้นตอนต่อๆ ไป
 # test read file
 data = pd.read_excel("testexcel.xlsx")
@@ -33,6 +36,8 @@ for i in range(4) :
         else :
             temp = 'Unnamed: ' + str(j)
         hua_BB[config_hua[i]].append(data[temp][i+2])
+    for j in range(2,6) :
+        temp = 'Unnamed: ' + str(j+4)
         hua_RRU[config_hua[i]].append(data[temp][i+2])
 #Nokia BB and RRU
 nok_BB = dict()
@@ -46,6 +51,8 @@ for i in range(4) :
         else :
             temp = 'Unnamed: ' + str(j)
         nok_BB[config_nok[i]].append(data[temp][i+6])
+    for j in range(2,6) :
+        temp = 'Unnamed: ' + str(j+4)
         nok_RRU[config_nok[i]].append(data[temp][i+6])
 # Ericsson BB and RRU
 eric_BB = dict()
@@ -59,11 +66,12 @@ for i in range(4) :
         else :
             temp = 'Unnamed: ' + str(j)
         eric_BB[config_eric[i]].append(data[temp][i+10])
+    for j in range(2,6) :
+        temp = 'Unnamed: ' + str(j+4)
         eric_RRU[config_eric[i]].append(data[temp][i+10])
 # end test
 global LINE_API_KEY
-LINE_API_KEY = "Bearer U/HsQTcUnjR0XfeeaaLavqDNPMtS9S8XVRtZnxI5kGbU/KLkl6ACPgTDVRhUs9st9HwBPatKDSzCO0QXkRcImHZLEBBlh8px09Y5+JSLlEMQG/coIPOOdIVPoN8Og/vUGotY54LSzD+yRSKOQ/AQwQdB04t89/1O/w1cDnyilFU="
-
+LINE_API_KEY = "Bearer VeZxZ+55VcOWLNra3BBOua8ORc6nzDn76baWmG1cs6MlI2RsjzGbmIansUQ81BF09HwBPatKDSzCO0QXkRcImHZLEBBlh8px09Y5+JSLlEM004HJAQ2NRcuUlr51OpOnwYgcqMHqAfBt0vqte4DH+gdB04t89/1O/w1cDnyilFU="
 app = Flask(__name__)
  
 @app.route('/')
@@ -73,6 +81,18 @@ def index():
 
 def bot():
     # ข้อความที่ต้องการส่งกลับ
+    global before
+    global con
+    global vendor
+    global config_hua
+    global config_eric
+    global config_nok
+    global hua_RRU
+    global hua_BB
+    global nok_RRU
+    global nok_BB
+    global eric_RRU
+    global eric_BB
     replyStack = list()
    
     # ข้อความที่ได้รับมา
@@ -85,14 +105,11 @@ def bot():
     # ทดลอง Echo ข้อความกลับไปในรูปแบบที่ส่งไป-มา (แบบ json)
     replyStack.append(msg_in_string)
     # answer
-    mobile = ["Huawei","Nokia","Ericsson"]
-    before = ""
-    con = ""
+    
     if msg_in_json["events"][0]["message"]["text"] == "Vendor" :
         reply(replyToken, vendor)
-    elif msg_in_json["events"][0]["message"]["text"] in mobile :
+    elif msg_in_json["events"][0]["message"]["text"] in vendor :
         reply(replyToken, ["Ok, I know what your mobile is."," If you want to about configuration.","Please, type Configuration."])
-        before = msg_in_json["events"][0]["message"]["text"]
     elif msg_in_json["events"][0]["message"]["text"] == "Configuration" :
         if before == "Huawei" :
             config_hua.append("What is your configuration?")
@@ -106,19 +123,27 @@ def bot():
             reply(replyToken, config_eric)
     elif msg_in_json["events"][0]["message"]["text"] in config_hua :
         con = msg_in_json["events"][0]["message"]["text"]
-        before = [hua_BB,hua_RRU]
+        before = list()
+        before.append(hua_BB)
+        before.append(hua_RRU)
+        #before = [hua_BB,hua_RRU]
         reply(replyToken, ["Is it BB or RRU"])
     elif msg_in_json["events"][0]["message"]["text"] in config_nok :
         con = msg_in_json["events"][0]["message"]["text"]
-        before = [hua_BB,hua_RRU]
+        before = [nok_BB,nok_RRU]
         reply(replyToken, ["Is it BB or RRU"])
     elif msg_in_json["events"][0]["message"]["text"] in config_eric :
         con = msg_in_json["events"][0]["message"]["text"]
-        before = [hua_BB,hua_RRU]
+        before = [eric_BB,eric_RRU]
         reply(replyToken, ["Is it BB or RRU"])
     elif msg_in_json["events"][0]["message"]["text"] in ["BB","RRU"] :
         if msg_in_json["events"][0]["message"]["text"] == "BB" :
-            before = before[0]
+            if len(before) == 2 :
+                before = before[0]
+                t = '2'
+            else :
+                before = nok_BB
+                t = '0'
             reply(replyToken, ["What is your sector?"])
         else :
             before = before[1]
@@ -126,21 +151,25 @@ def bot():
     elif len(msg_in_json["events"][0]["message"]["text"].strip().split()) == 2 :
         temp = int(msg_in_json["events"][0]["message"]["text"].strip().split()[0])
         if temp == 3 :
+            tmp = before[con][0]
             before = ""
             con = ""
-            reply(replyToken, [before[con][0]])
+            reply(replyToken, [tmp])
         elif temp == 4 :
+            tmp = before[con][1]
             before = ""
             con = ""
-            reply(replyToken, [before[con][1]])
+            reply(replyToken, [tmp])
         elif temp == 6 :
+            tmp = before[con][2]
             before = ""
             con = ""
-            reply(replyToken, [before[con][2]])
+            reply(replyToken, [tmp])
         else :
+            tmp = before[con][3]
             before = ""
             con = ""
-            reply(replyToken, [before[con][3]])
+            reply(replyToken, [tmp])
 
     else :
         before = ""
@@ -148,7 +177,7 @@ def bot():
         reply(replyToken, ["Please, input Vendor first."])
     
     return 'OK',200
- 
+
 def reply(replyToken, textList):
     # Method สำหรับตอบกลับข้อความประเภท text กลับครับ เขียนแบบนี้เลยก็ได้ครับ
     LINE_API = 'https://api.line.me/v2/bot/message/reply'
